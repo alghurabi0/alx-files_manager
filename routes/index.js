@@ -1,3 +1,5 @@
+import postUpload from '../controllers/FilesController';
+
 const express = require('express');
 const AppController = require('../controllers/AppController');
 const AuthController = require('../controllers/AuthController');
@@ -22,5 +24,8 @@ router.get('/disconnect', (req, res) => {
 });
 router.get('/users/me', (req, res) => {
   UserController.getMe(req, res);
+});
+router.post('/files', (req, res) => {
+  postUpload(req, res);
 });
 module.exports = router;
