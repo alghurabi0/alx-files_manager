@@ -14,14 +14,13 @@ class UsersController {
     const hashedPassword = sha1(password);
 
     try {
-      const col = dbClient.db.collection('users');
-      const user = await col.findOne({ email });
+      const user = await dbClient.findUser(email);
 
       if (user) {
         res.status(400).json({ error: 'Already exist' });
       } else {
-        col.insertOne({ email, password: hashedPassword });
-        const newUser = await col.findOne({ email }, { projection: { email: 1 } });
+        await dbClient.createUser(email, hashedPassword);
+        const newUser = await dbClient.findUser(email);
         res.status(201).json({ id: newUser._id, email: newUser.email });
       }
     } catch (error) {
