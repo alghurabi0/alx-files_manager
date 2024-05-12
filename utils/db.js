@@ -41,6 +41,15 @@ class DBClient {
     const collection = this.db.collection('users');
     await collection.insertOne({ email, password });
   }
+
+  async findUserById(userId) {
+    const collection = this.db.collection('users');
+    const user = await collection.findOne({ _id: userId });
+    if (user) {
+      return user;
+    }
+    return false;
+  }
 }
 
 const dbClient = new DBClient();
