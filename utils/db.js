@@ -29,13 +29,13 @@ class DBClient {
   }
 
   async getUserByEmail(email) {
-    const user = await this.db.collection('users').findOne({ email });
+    const user = this.db.collection('users').findOne({ email });
     if (user) return user;
     return null;
   }
 
   async createUser(email, password) {
-    const user = await this.db.collection('users').insertOne({ email, password });
+    const user = this.db.collection('users').insertOne({ email, password });
     return user;
   }
 }
