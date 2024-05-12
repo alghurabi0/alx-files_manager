@@ -29,8 +29,12 @@ class DBClient {
   }
 
   async getUserByEmail(email) {
-    const user = this.db.collection('users').findOne({ email });
-    if (user) return user;
+    try {
+      const user = this.db.collection('users').findOne({ email });
+      if (user) return user;
+    } catch (error) {
+      return null;
+    }
     return null;
   }
 
