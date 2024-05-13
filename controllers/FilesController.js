@@ -4,18 +4,29 @@ import { mkdir, writeFile } from 'fs';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
+function isValidId(id) {
+  try {
+    ObjectId(id);
+  } catch (err) {
+    return false;
+  }
+  return true;
+}
+
 export default async function postUpload(req, res) {
   try {
-    const { token } = req.headers;
-    if (!token) {
+    const obj = { userId: null, key: null };
+    const token = req.header('X-Token');
+    if (token) {
+      obj.key = `auth_${token}`;
+      obj.userId = await redisClient.get(obj.key);
+    }
+    if (!isValidId(obj.userId)) {
       return res.status(401).send({ error: 'Unauthorized' });
     }
-    const userId = await redisClient.get(`auth_${token}`);
-    if (!userId) {
-      return res.status(401).send({ error: 'Unauthorized' });
-    }
-    const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+    const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
     if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
     const { name, type, data } = req.body;
     if (!name) {
       return res.status(400).send({ error: 'Missing name' });
