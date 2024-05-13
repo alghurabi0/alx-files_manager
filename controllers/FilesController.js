@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
-import { mkdir, writeFile } from 'fs';
+import { mkdir, writeFile, readFileSync } from 'fs';
+import mime from 'mime-types';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
@@ -175,50 +176,86 @@ export async function getIndex(req, res) {
 }
 
 export async function putPublish(req, res) {
-  try {
-    const obj = { userId: null, key: null };
-    const token = req.header('X-Token');
-    if (token) {
-      obj.key = `auth_${token}`;
-      obj.userId = await redisClient.get(obj.key);
-    }
-    if (!isValidId(obj.userId)) {
-      return res.status(401).send({ error: 'Unauthorized' });
-    }
-    const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
-    if (!user) return res.status(401).send({ error: 'Unauthorized' });
-
-    const fileId = req.params.id;
-    if (!isValidId(fileId) || !isValidId(obj.userId)) {
-      return res.status(404).send({ error: 'Not found' });
-    }
-    const file = await dbClient.db
-      .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
-    if (!file) return res.status(404).send({ error: 'Not found' });
-
-    const filters = { _id: ObjectId(fileId) };
-    const set = { $set: { isPublic: true } };
-    await dbClient.db.collection('files').updateOne(filters, set);
-
-    const updatedFile = await dbClient.db
-      .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
-
-    return res.status(200).send({
-      id: updatedFile._id,
-      userId: file.userId,
-      name: updatedFile.name,
-      type: updatedFile.type,
-      isPublic: updatedFile.isPublic,
-      parentId: updatedFile.parentId,
-    });
-  } catch (error) {
+  const obj = { userId: null, key: null };
+  const token = req.header('X-Token');
+  if (token) {
+    obj.key = `auth_${token}`;
+    obj.userId = await redisClient.get(obj.key);
+  }
+  if (!isValidId(obj.userId)) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
+  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
+  if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
+  const fileId = req.params.id;
+  if (!isValidId(fileId) || !isValidId(obj.userId)) {
+    return res.status(404).send({ error: 'Not found' });
+  }
+  const file = await dbClient.db
+    .collection('files')
+    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+  if (!file) return res.status(404).send({ error: 'Not found' });
+
+  const filters = { _id: ObjectId(fileId) };
+  const set = { $set: { isPublic: true } };
+  await dbClient.db.collection('files').updateOne(filters, set);
+
+  const updatedFile = await dbClient.db
+    .collection('files')
+    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+
+  return res.status(200).send({
+    id: updatedFile._id,
+    userId: file.userId,
+    name: updatedFile.name,
+    type: updatedFile.type,
+    isPublic: updatedFile.isPublic,
+    parentId: updatedFile.parentId,
+  });
 }
 
 export async function putUnpublish(req, res) {
+  const obj = { userId: null, key: null };
+  const token = req.header('X-Token');
+  if (token) {
+    obj.key = `auth_${token}`;
+    obj.userId = await redisClient.get(obj.key);
+  }
+  if (!isValidId(obj.userId)) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
+  if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
+  const fileId = req.params.id;
+  if (!isValidId(fileId) || !isValidId(obj.userId)) {
+    return res.status(404).send({ error: 'Not found' });
+  }
+  const file = await dbClient.db
+    .collection('files')
+    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+  if (!file) return res.status(404).send({ error: 'Not found' });
+
+  const filters = { _id: ObjectId(fileId) };
+  const set = { $set: { isPublic: false } };
+  await dbClient.db.collection('files').updateOne(filters, set);
+
+  const updatedFile = await dbClient.db
+    .collection('files')
+    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+
+  return res.status(200).send({
+    id: updatedFile._id,
+    userId: file.userId,
+    name: updatedFile.name,
+    type: updatedFile.type,
+    isPublic: updatedFile.isPublic,
+    parentId: updatedFile.parentId,
+  });
+}
+
+export async function getFile(req, res) {
   try {
     const obj = { userId: null, key: null };
     const token = req.header('X-Token');
@@ -240,23 +277,21 @@ export async function putUnpublish(req, res) {
       .collection('files')
       .findOne({ _id: ObjectId(fileId), userId: obj.userId });
     if (!file) return res.status(404).send({ error: 'Not found' });
-
-    const filters = { _id: ObjectId(fileId) };
-    const set = { $set: { isPublic: false } };
-    await dbClient.db.collection('files').updateOne(filters, set);
-
-    const updatedFile = await dbClient.db
-      .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
-
-    return res.status(200).send({
-      id: updatedFile._id,
-      userId: file.userId,
-      name: updatedFile.name,
-      type: updatedFile.type,
-      isPublic: updatedFile.isPublic,
-      parentId: updatedFile.parentId,
-    });
+    if (!file.isPublic || file.userId !== obj.userId) {
+      return res.status(404).send({ error: 'Not found' });
+    }
+    if (file.type === 'folder') {
+      return res.status(400).send({ error: "A folder doesn't have content" });
+    }
+    const path = file.localPath;
+    try {
+      const fileData = readFileSync(path);
+      const mimeType = mime.contentType(file.name);
+      res.setHeader('Content-Type', mimeType);
+      return res.status(200).send(fileData);
+    } catch (err) {
+      return res.status(404).send({ error: 'Not found' });
+    }
   } catch (error) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
