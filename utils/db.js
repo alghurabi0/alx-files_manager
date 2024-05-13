@@ -50,6 +50,21 @@ class DBClient {
     }
     return false;
   }
+
+  async get(fileId) {
+    const collection = this.db.collection('files');
+    const file = await collection.findOne({ _id: fileId });
+    if (file) {
+      return file;
+    }
+    return false;
+  }
+
+  async addFolder(folder) {
+    const collection = this.db.collection('files');
+    const result = await collection.insertOne(folder);
+    return result.insertedId;
+  }
 }
 
 const dbClient = new DBClient();
