@@ -182,12 +182,14 @@ export async function putPublish(req, res) {
       obj.key = `auth_${token}`;
       obj.userId = await redisClient.get(obj.key);
     }
-    if (!isValidId(obj.userId)) return res.status(401).send({ error: 'Unauthorized' });
+    if (!isValidId(obj.userId)) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
     const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
     if (!user) return res.status(401).send({ error: 'Unauthorized' });
 
     const fileId = req.params.id;
-    if (!isValidId(fileId)) {
+    if (!isValidId(fileId) || !isValidId(obj.userId)) {
       return res.status(404).send({ error: 'Not found' });
     }
     const file = await dbClient.db
@@ -197,7 +199,7 @@ export async function putPublish(req, res) {
 
     const filters = { _id: ObjectId(fileId) };
     const set = { $set: { isPublic: true } };
-    await dbClient.db.collection('files').updateOne(filters, set, { returnOriginal: false });
+    await dbClient.db.collection('files').updateOne(filters, set);
 
     let updatedFile = await dbClient.db
       .collection('files')
@@ -220,12 +222,14 @@ export async function putUnpublish(req, res) {
       obj.key = `auth_${token}`;
       obj.userId = await redisClient.get(obj.key);
     }
-    if (!isValidId(obj.userId)) return res.status(401).send({ error: 'Unauthorized' });
+    if (!isValidId(obj.userId)) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
     const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
     if (!user) return res.status(401).send({ error: 'Unauthorized' });
 
     const fileId = req.params.id;
-    if (!isValidId(fileId)) {
+    if (!isValidId(fileId) || !isValidId(obj.userId)) {
       return res.status(404).send({ error: 'Not found' });
     }
     const file = await dbClient.db
@@ -235,7 +239,7 @@ export async function putUnpublish(req, res) {
 
     const filters = { _id: ObjectId(fileId) };
     const set = { $set: { isPublic: false } };
-    await dbClient.db.collection('files').updateOne(filters, set, { returnOriginal: false });
+    await dbClient.db.collection('files').updateOne(filters, set);
 
     let updatedFile = await dbClient.db
       .collection('files')
