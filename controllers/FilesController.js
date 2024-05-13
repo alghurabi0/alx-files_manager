@@ -187,7 +187,7 @@ export async function putPublish(req, res) {
     if (!user) return res.status(401).send({ error: 'Unauthorized' });
 
     const fileId = req.params.id;
-    if (!isValidId(fileId) || !isValidId(obj.userId)) {
+    if (!isValidId(fileId)) {
       return res.status(404).send({ error: 'Not found' });
     }
     const file = await dbClient.db
@@ -204,13 +204,17 @@ export async function putPublish(req, res) {
       { returnOriginal: false },
     );
 
+    const {
+      _id: id, userId: resultUserId, name, type, isPublic, parentId,
+    } = editedFile.value;
+
     const final = {
-      id: editedFile.value._id,
-      userId: editedFile.value.userId,
-      name: editedFile.value.name,
-      type: editedFile.value.type,
-      isPublic: editedFile.value.isPublic,
-      parentId: editedFile.value.parentId,
+      id,
+      userId: resultUserId,
+      name,
+      type,
+      isPublic,
+      parentId,
     };
     return res.status(200).send(final);
   } catch (error) {
