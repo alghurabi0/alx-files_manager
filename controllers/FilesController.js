@@ -140,6 +140,7 @@ export async function getIndex(req, res) {
   if (Number.isNaN(page)) page = 0;
   if (parentId !== 0 && parentId !== '0') {
     if (!isValidId(parentId)) return res.status(401).send({ error: 'Unauthorized' });
+    parentId = ObjectId(parentId);
     const folder = await dbClient.db.collection('files').findOne({ parentId: ObjectId(parentId) });
     if (!folder || folder.type !== 'folder') {
       return res.status(200).send([]);
