@@ -194,21 +194,25 @@ export async function putPublish(req, res) {
     }
     const file = await dbClient.db
       .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
     if (!file) return res.status(404).send({ error: 'Not found' });
 
     const filters = { _id: ObjectId(fileId) };
     const set = { $set: { isPublic: true } };
     await dbClient.db.collection('files').updateOne(filters, set);
 
-    let updatedFile = await dbClient.db
+    const updatedFile = await dbClient.db
       .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
 
-    updatedFile = { id: updatedFile._id, ...updatedFile };
-    delete updatedFile._id;
-    delete updatedFile.localPath;
-    return res.status(200).send(updatedFile);
+    return res.status(200).send({
+      id: updatedFile._id,
+      userId: file.userId,
+      name: updatedFile.name,
+      type: updatedFile.type,
+      isPublic: updatedFile.isPublic,
+      parentId: updatedFile.parentId,
+    });
   } catch (error) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
@@ -234,21 +238,25 @@ export async function putUnpublish(req, res) {
     }
     const file = await dbClient.db
       .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
     if (!file) return res.status(404).send({ error: 'Not found' });
 
     const filters = { _id: ObjectId(fileId) };
     const set = { $set: { isPublic: false } };
     await dbClient.db.collection('files').updateOne(filters, set);
 
-    let updatedFile = await dbClient.db
+    const updatedFile = await dbClient.db
       .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
 
-    updatedFile = { id: updatedFile._id, ...updatedFile };
-    delete updatedFile._id;
-    delete updatedFile.localPath;
-    return res.status(200).send(updatedFile);
+    return res.status(200).send({
+      id: updatedFile._id,
+      userId: file.userId,
+      name: updatedFile.name,
+      type: updatedFile.type,
+      isPublic: updatedFile.isPublic,
+      parentId: updatedFile.parentId,
+    });
   } catch (error) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
