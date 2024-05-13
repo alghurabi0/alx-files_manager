@@ -195,28 +195,18 @@ export async function putPublish(req, res) {
       .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
     if (!file) return res.status(404).send({ error: 'Not found' });
 
-    const editedFile = await dbClient.db.collection('files').findOneAndUpdate(
-      {
-        _id: ObjectId(fileId),
-        userId: ObjectId(obj.userId),
-      },
-      { $set: { isPublic: true } },
-      { returnOriginal: false },
-    );
+    const filters = { _id: ObjectId(fileId) };
+    const set = { $set: { isPublic: true } };
+    await dbClient.db.collection('files').updateOne(filters, set, { returnOriginal: false });
 
-    const {
-      _id: id, userId: resultUserId, name, type, isPublic, parentId,
-    } = editedFile.value;
+    let updatedFile = await dbClient.db
+      .collection('files')
+      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
 
-    const final = {
-      id,
-      userId: resultUserId,
-      name,
-      type,
-      isPublic,
-      parentId,
-    };
-    return res.status(200).send(final);
+    updatedFile = { id: updatedFile._id, ...updatedFile };
+    delete updatedFile._id;
+    delete updatedFile.localPath;
+    return res.status(200).send(updatedFile);
   } catch (error) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
@@ -235,7 +225,7 @@ export async function putUnpublish(req, res) {
     if (!user) return res.status(401).send({ error: 'Unauthorized' });
 
     const fileId = req.params.id;
-    if (!isValidId(fileId) || !isValidId(obj.userId)) {
+    if (!isValidId(fileId)) {
       return res.status(404).send({ error: 'Not found' });
     }
     const file = await dbClient.db
@@ -243,24 +233,18 @@ export async function putUnpublish(req, res) {
       .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
     if (!file) return res.status(404).send({ error: 'Not found' });
 
-    const editedFile = await dbClient.db.collection('files').findOneAndUpdate(
-      {
-        _id: ObjectId(fileId),
-        userId: ObjectId(obj.userId),
-      },
-      { $set: { isPublic: false } },
-      { returnOriginal: false },
-    );
+    const filters = { _id: ObjectId(fileId) };
+    const set = { $set: { isPublic: false } };
+    await dbClient.db.collection('files').updateOne(filters, set, { returnOriginal: false });
 
-    const final = {
-      id: editedFile.value._id,
-      userId: editedFile.value.userId,
-      name: editedFile.value.name,
-      type: editedFile.value.type,
-      isPublic: editedFile.value.isPublic,
-      parentId: editedFile.value.parentId,
-    };
-    return res.status(200).send(final);
+    let updatedFile = await dbClient.db
+      .collection('files')
+      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+
+    updatedFile = { id: updatedFile._id, ...updatedFile };
+    delete updatedFile._id;
+    delete updatedFile.localPath;
+    return res.status(200).send(updatedFile);
   } catch (error) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
