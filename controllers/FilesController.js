@@ -201,6 +201,7 @@ export async function putPublish(req, res) {
         userId: ObjectId(obj.userId),
       },
       { $set: { isPublic: true } },
+      { returnOriginal: false },
     );
 
     const final = {
@@ -244,6 +245,7 @@ export async function putUnpublish(req, res) {
         userId: ObjectId(obj.userId),
       },
       { $set: { isPublic: false } },
+      { returnOriginal: false },
     );
 
     const final = {
