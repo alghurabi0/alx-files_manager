@@ -173,3 +173,89 @@ export async function getIndex(req, res) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
 }
+
+export async function putPublish(req, res) {
+  try {
+    const obj = { userId: null, key: null };
+    const token = req.header('X-Token');
+    if (token) {
+      obj.key = `auth_${token}`;
+      obj.userId = await redisClient.get(obj.key);
+    }
+    if (!isValidId(obj.userId)) return res.status(401).send({ error: 'Unauthorized' });
+    const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
+    if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
+    const fileId = req.params.id;
+    if (!isValidId(fileId) || !isValidId(obj.userId)) {
+      return res.status(404).send({ error: 'Not found' });
+    }
+    const file = await dbClient.db
+      .collection('files')
+      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+    if (!file) return res.status(404).send({ error: 'Not found' });
+
+    const editedFile = await dbClient.db.collection('files').findOneAndUpdate(
+      {
+        _id: ObjectId(fileId),
+        userId: ObjectId(obj.userId),
+      },
+      { $set: { isPublic: true } },
+    );
+
+    const final = {
+      id: editedFile.value._id,
+      userId: editedFile.value.userId,
+      name: editedFile.value.name,
+      type: editedFile.value.type,
+      isPublic: editedFile.value.isPublic,
+      parentId: editedFile.value.parentId,
+    };
+    return res.status(200).send(final);
+  } catch (error) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+}
+
+export async function putUnpublish(req, res) {
+  try {
+    const obj = { userId: null, key: null };
+    const token = req.header('X-Token');
+    if (token) {
+      obj.key = `auth_${token}`;
+      obj.userId = await redisClient.get(obj.key);
+    }
+    if (!isValidId(obj.userId)) return res.status(401).send({ error: 'Unauthorized' });
+    const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
+    if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
+    const fileId = req.params.id;
+    if (!isValidId(fileId) || !isValidId(obj.userId)) {
+      return res.status(404).send({ error: 'Not found' });
+    }
+    const file = await dbClient.db
+      .collection('files')
+      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+    if (!file) return res.status(404).send({ error: 'Not found' });
+
+    const editedFile = await dbClient.db.collection('files').findOneAndUpdate(
+      {
+        _id: ObjectId(fileId),
+        userId: ObjectId(obj.userId),
+      },
+      { $set: { isPublic: false } },
+    );
+
+    const final = {
+      id: editedFile.value._id,
+      userId: editedFile.value.userId,
+      name: editedFile.value.name,
+      type: editedFile.value.type,
+      isPublic: editedFile.value.isPublic,
+      parentId: editedFile.value.parentId,
+    };
+    return res.status(200).send(final);
+  } catch (error) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+}
