@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 const host = process.env.DB_HOST || 'localhost';
 const port = process.env.DB_PORT || 27017;
@@ -44,7 +44,7 @@ class DBClient {
 
   async findUserById(userId) {
     const collection = this.db.collection('users');
-    const user = await collection.findOne({ _id: userId });
+    const user = await collection.findOne({ _id: ObjectId(userId) });
     if (user) {
       return user;
     }
