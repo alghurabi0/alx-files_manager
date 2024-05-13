@@ -13,7 +13,7 @@ function isValidId(id) {
   return true;
 }
 
-export default async function postUpload(req, res) {
+export async function postUpload(req, res) {
   try {
     const obj = { userId: null, key: null };
     const token = req.header('X-Token');
@@ -93,4 +93,72 @@ export default async function postUpload(req, res) {
   } catch (error) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
+}
+
+export async function getShow(req, res) {
+  const obj = { userId: null, key: null };
+  const token = req.header('X-Token');
+  if (token) {
+    obj.key = `auth_${token}`;
+    obj.userId = await redisClient.get(obj.key);
+  }
+  if (!isValidId(obj.userId)) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
+  if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
+  const fileId = req.params.id;
+  if (!isValidId(fileId) || !isValidId(obj.userId)) {
+    return res.status(404).send({ error: 'Not found' });
+  }
+  let file = await dbClient.db
+    .collection('files')
+    .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
+  if (!file) return res.status(404).send({ error: 'Not found' });
+  file = { id: file._id, ...file };
+  delete file.localPath;
+  delete file._id;
+
+  return res.status(200).send(file);
+}
+
+export async function getIndex(req, res) {
+  const obj = { userId: null, key: null };
+  const token = req.header('X-Token');
+  if (token) {
+    obj.key = `auth_${token}`;
+    obj.userId = await redisClient.get(obj.key);
+  }
+  if (!isValidId(obj.userId)) return res.status(401).send({ error: 'Unauthorized' });
+  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(obj.userId) });
+  if (!user) return res.status(401).send({ error: 'Unauthorized' });
+
+  let parentId = req.query.parentId || '0';
+  if (parentId === '0') parentId = 0;
+  let page = Number(req.query.page) || 0;
+  if (Number.isNaN(page)) page = 0;
+  if (parentId !== 0 && parentId !== '0') {
+    if (!isValidId(parentId)) return res.status(401).send({ error: 'Unauthorized' });
+    const folder = await dbClient.db.collection('files').findOne({ parentId: ObjectId(parentId) });
+    if (!folder || folder.type !== 'folder') {
+      return res.status(200).send([]);
+    }
+  }
+  const aggregate = [
+    { $match: { parentId } },
+    { $skip: page * 20 },
+    {
+      $limit: 20,
+    },
+  ];
+  const files = await dbClient.db.collection('files').aggregate(aggregate);
+  const fileList = [];
+  await files.forEach((file) => {
+    const processedFile = { id: file._id, ...file };
+    delete processedFile.localPath;
+    delete processedFile._id;
+    fileList.push(processedFile);
+  });
+  return res.status(200).send(fileList);
 }
