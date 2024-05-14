@@ -275,7 +275,7 @@ export async function getFile(req, res) {
     }
     const file = await dbClient.db
       .collection('files')
-      .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+      .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
     if (!file) return res.status(404).send({ error: 'Not found' });
     if (!file.isPublic || file.userId !== obj.userId) {
       return res.status(404).send({ error: 'Not found' });
