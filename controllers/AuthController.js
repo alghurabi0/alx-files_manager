@@ -1,3 +1,4 @@
+import sha1 from 'sha1';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
 
@@ -16,7 +17,7 @@ export async function getConnect(req, res) {
     if (!user) {
       return res.status(401).send({ error: 'Unauthorized' });
     }
-    if (user.password !== password) {
+    if (user.password !== sha1(password)) {
       return res.status(401).send({ error: 'Unauthorized' });
     }
     const token = uuidv4();
