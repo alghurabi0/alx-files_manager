@@ -194,7 +194,7 @@ export async function putPublish(req, res) {
   }
   const file = await dbClient.db
     .collection('files')
-    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+    .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
   if (!file) return res.status(404).send({ error: 'Not found' });
 
   const filters = { _id: ObjectId(fileId) };
@@ -203,11 +203,11 @@ export async function putPublish(req, res) {
 
   const updatedFile = await dbClient.db
     .collection('files')
-    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+    .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
 
   return res.status(200).send({
     id: updatedFile._id,
-    userId: file.userId,
+    userId: updatedFile.userId,
     name: updatedFile.name,
     type: updatedFile.type,
     isPublic: updatedFile.isPublic,
@@ -234,7 +234,7 @@ export async function putUnpublish(req, res) {
   }
   const file = await dbClient.db
     .collection('files')
-    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+    .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
   if (!file) return res.status(404).send({ error: 'Not found' });
 
   const filters = { _id: ObjectId(fileId) };
@@ -243,11 +243,11 @@ export async function putUnpublish(req, res) {
 
   const updatedFile = await dbClient.db
     .collection('files')
-    .findOne({ _id: ObjectId(fileId), userId: obj.userId });
+    .findOne({ _id: ObjectId(fileId), userId: ObjectId(obj.userId) });
 
   return res.status(200).send({
     id: updatedFile._id,
-    userId: file.userId,
+    userId: updatedFile.userId,
     name: updatedFile.name,
     type: updatedFile.type,
     isPublic: updatedFile.isPublic,
