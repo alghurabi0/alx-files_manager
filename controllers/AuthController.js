@@ -12,7 +12,7 @@ export async function getConnect(req, res) {
     const buff = Buffer.from(authorization.split(' ')[1], 'base64');
     const creds = buff.toString('utf-8');
     const [email, password] = creds.split(':');
-    const user = dbClient.findUser(email);
+    const user = await dbClient.db.collection('users').findOne({ email });
     if (!user) {
       return res.status(401).send({ error: 'Unauthorized' });
     }

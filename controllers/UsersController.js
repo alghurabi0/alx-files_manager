@@ -30,7 +30,7 @@ export async function postNew(req, res) {
 }
 
 export async function getMe(req, res) {
-  const { token } = req.headers;
+  const token = req.header('X-Token');
   if (!token) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
